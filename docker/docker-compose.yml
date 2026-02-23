@@ -1,0 +1,108 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+      - "2004:2004"
+    environment:
+      - NEO4J_AUTH=neo4j/neo4j_password_change_me
+
+      # Plugins (GDS는 5.26 community 미지원 → apoc + n10s만 사용)
+      - NEO4J_PLUGINS=["apoc","n10s"]
+
+      # Procedures
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,n10s.*,semantics.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,n10s.*,semantics.*
+
+      # Memory
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1G
+      - NEO4J_server_memory_pagecache_size=512m
+
+      # Strict validation 비활성화 (플러그인이 추가한 미지원 설정 무시)
+      - NEO4J_server_config_strict__validation_enabled=false
+
+      # Prometheus metrics
+      - NEO4J_server_metrics_enabled=true
+      - NEO4J_server_metrics_prometheus_enabled=true
+      - NEO4J_server_metrics_prometheus_endpoint=0.0.0.0:2004
+
+      # Query logs
+      - NEO4J_db_logs_query_enabled=INFO
+      - NEO4J_db_logs_query_threshold=500ms
+
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_plugins:/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ha_core
+      - POSTGRES_USER=ha
+      - POSTGRES_PASSWORD=ha_password_change_me
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ha -d ha_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  neodash:
+    image: neo4jlabs/neodash:latest
+    container_name: neodash
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "5005:5005"
+    environment:
+      - ssoEnabled=false
+      - standalone=true
+      - standaloneProtocol=neo4j
+      - standaloneHost=neo4j
+      - standalonePort=7687
+      - standaloneDatabase=neo4j
+      - standaloneUsername=neo4j
+      - standalonePassword=neo4j_password_change_me
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_plugins:
+  pg_data:
+  grafana_data:
