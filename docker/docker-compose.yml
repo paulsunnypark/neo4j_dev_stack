@@ -1,11 +1,13 @@
+name: neo4j_dev
+
 services:
   neo4j:
     image: neo4j:5.26-community
-    container_name: neo4j
+    container_name: neo4j_dev_neo4j
     ports:
-      - "7474:7474"
-      - "7687:7687"
-      - "2004:2004"
+      - "7477:7474"
+      - "7690:7687"
+      - "2007:2004"
     environment:
       - NEO4J_AUTH=neo4j/neo4j_password_change_me
 
@@ -24,7 +26,7 @@ services:
       # Strict validation 비활성화 (플러그인이 추가한 미지원 설정 무시)
       - NEO4J_server_config_strict__validation_enabled=false
 
-      # Prometheus metrics
+      # Prometheus metrics (내부 포트 2004 유지)
       - NEO4J_server_metrics_enabled=true
       - NEO4J_server_metrics_prometheus_enabled=true
       - NEO4J_server_metrics_prometheus_endpoint=0.0.0.0:2004
@@ -45,9 +47,9 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: postgres
+    container_name: neo4j_dev_postgres
     ports:
-      - "5432:5432"
+      - "5435:5432"
     environment:
       - POSTGRES_DB=ha_core
       - POSTGRES_USER=ha
@@ -63,17 +65,17 @@ services:
 
   neodash:
     image: neo4jlabs/neodash:latest
-    container_name: neodash
+    container_name: neo4j_dev_neodash
     depends_on:
       neo4j:
         condition: service_healthy
     ports:
-      - "5005:5005"
+      - "5008:5005"
     environment:
       - ssoEnabled=false
       - standalone=true
       - standaloneProtocol=neo4j
-      - standaloneHost=neo4j
+      - standaloneHost=neo4j_dev_neo4j
       - standalonePort=7687
       - standaloneDatabase=neo4j
       - standaloneUsername=neo4j
@@ -81,24 +83,29 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: neo4j_dev_prometheus
     depends_on:
       neo4j:
         condition: service_healthy
     ports:
-      - "9090:9090"
+      - "9093:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: neo4j_dev_grafana
     depends_on:
       - prometheus
     ports:
-      - "3000:3000"
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_change_me
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
 
 volumes:
   neo4j_data:

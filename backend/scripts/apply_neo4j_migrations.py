@@ -21,7 +21,11 @@ async def main():
             for f in files:
                 cypher = f.read_text(encoding="utf-8")
                 # 세미콜론으로 구분된 각 구문을 개별 실행
-                statements = [s.strip() for s in cypher.split(";") if s.strip()]
+                # -- 주석 라인 제거 후 세미콜론으로 분리
+                def strip_comments(text: str) -> str:
+                    lines = [l for l in text.splitlines() if not l.strip().startswith("--")]
+                    return "\n".join(lines)
+                statements = [strip_comments(s).strip() for s in cypher.split(";") if strip_comments(s).strip()]
                 for stmt in statements:
                     await session.execute_write(lambda tx, q=stmt: tx.run(q))
                 print(f"APPLIED: {f.name} ({len(statements)} statements)")

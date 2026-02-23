@@ -1,10 +1,22 @@
 import asyncio
 import json
+import logging
+
 from app.core.postgres import PostgresManager
 from app.repositories.graph_repository import GraphRepository
+from app.models.events import (
+    AttributeChangedPayload,
+    EntityCreatedPayload,
+    EntityDeletedPayload,
+    RelationshipEstablishedPayload,
+    RelationshipRemovedPayload,
+    StatusChangedPayload,
+)
 
 POLL_INTERVAL_SEC = 1.0
 BATCH_SIZE = 50
+logger = logging.getLogger(__name__)
+
 
 class ProjectionWorker:
     def __init__(self, graph_repo: GraphRepository):
@@ -59,8 +71,19 @@ class ProjectionWorker:
             try:
                 await self._apply_event(event_type, payload)
                 ok_ids.append(outbox_id)
+                try:
+                    from app.core.metrics import OUTBOX_PROCESSED
+                    OUTBOX_PROCESSED.labels(event_type=event_type).inc()
+                except Exception:
+                    pass
             except Exception as e:
+                logger.exception("Failed to apply event %s (outbox_id=%s)", event_type, outbox_id)
                 fail_map[outbox_id] = str(e)
+                try:
+                    from app.core.metrics import OUTBOX_FAILED
+                    OUTBOX_FAILED.labels(event_type=event_type).inc()
+                except Exception:
+                    pass
 
         # 결과 반영
         async with pool.acquire() as conn:
@@ -82,12 +105,37 @@ class ProjectionWorker:
 
         return len(rows)
 
-    async def _apply_event(self, event_type: str, payload):
-        if event_type == "DeviceStatusChanged":
+    async def _apply_event(self, event_type: str, payload: dict):
+        if event_type == "EntityCreated":
+            p = EntityCreatedPayload(**payload)
+            await self.graph_repo.upsert_entity(p.entity_id, p.entity_type, p.name, p.attributes)
+
+        elif event_type == "EntityDeleted":
+            p = EntityDeletedPayload(**payload)
+            await self.graph_repo.delete_entity(p.entity_id)
+
+        elif event_type == "AttributeChanged":
+            p = AttributeChangedPayload(**payload)
+            await self.graph_repo.set_attribute(p.entity_id, p.attribute_key, p.new_value)
+
+        elif event_type == "RelationshipEstablished":
+            p = RelationshipEstablishedPayload(**payload)
+            await self.graph_repo.upsert_relationship(p.from_id, p.to_id, p.rel_type, p.properties)
+
+        elif event_type == "RelationshipRemoved":
+            p = RelationshipRemovedPayload(**payload)
+            await self.graph_repo.remove_relationship(p.from_id, p.to_id, p.rel_type)
+
+        elif event_type == "StatusChanged":
+            p = StatusChangedPayload(**payload)
+            await self.graph_repo.set_status(p.entity_id, p.new_status)
+
+        # 하위 호환
+        elif event_type == "DeviceStatusChanged":
             device_id = payload["device_id"]
             status = payload["status"]
             name = payload.get("name", device_id)
             await self.graph_repo.upsert_device(device_id, name, status)
+
         else:
-            # 미지원 이벤트는 무시
-            return
+            logger.warning("Unsupported event type ignored: %s", event_type)

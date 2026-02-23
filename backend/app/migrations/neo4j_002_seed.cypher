@@ -1,2 +1,6 @@
-MERGE (d:Device {id:"dev-1"})
-SET d.name="Device 1", d.status="ONLINE", d.updatedAt=datetime();
+-- 범용 Entity seed
+MERGE (e:Entity {id: "entity-1"})
+SET e.entityType = "Device", e.name = "Device 1", e.status = "ONLINE", e.updatedAt = datetime();
+
+MERGE (e:Entity {id: "entity-2"})
+SET e.entityType = "Service", e.name = "Service 1", e.status = "RUNNING", e.updatedAt = datetime();
