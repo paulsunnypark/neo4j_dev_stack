@@ -6,10 +6,11 @@ services:
     container_name: neo4j_dev_neo4j
     ports:
       - "7477:7474"
-      - "7690:7687"
+      - "127.0.0.1:17687:7687"
       - "2007:2004"
     environment:
       - NEO4J_AUTH=neo4j/neo4j_password_change_me
+      - NEO4J_server_bolt_advertised__address=localhost:17687
 
       # Plugins (GDS는 5.26 community 미지원 → apoc + n10s만 사용)
       - NEO4J_PLUGINS=["apoc","n10s"]
@@ -74,12 +75,11 @@ services:
     environment:
       - ssoEnabled=false
       - standalone=true
-      - standaloneProtocol=neo4j
-      - standaloneHost=neo4j_dev_neo4j
-      - standalonePort=7687
+      - standaloneProtocol=bolt
+      - standaloneHost=localhost
+      - standalonePort=17687
       - standaloneDatabase=neo4j
       - standaloneUsername=neo4j
-      - standalonePassword=neo4j_password_change_me
 
   prometheus:
     image: prom/prometheus:latest

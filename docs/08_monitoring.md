@@ -122,6 +122,10 @@ providers:
 **접속:** http://localhost:5008
 **자격증명:** Neo4j 계정 사용 (neo4j / neo4j_password_change_me)
 
+멀티 프로젝트 운영 시:
+- 각 리포트 쿼리에 `WHERE e.projectId = '<project_id>'` 필터를 추가
+- 기본 seed 쿼리는 전역 집계이므로 프로젝트별 관찰이 필요하면 복제 후 필터링
+
 ### 자동 로드 (`neo4j_003_neodash.cypher`)
 ```cypher
 MERGE (d:_Neodash_Dashboard {uuid: "neo4j-dev-overview"})

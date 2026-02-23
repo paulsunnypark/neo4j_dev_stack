@@ -1,4 +1,4 @@
-"""
+﻿"""
 애플리케이션 설정.
 pydantic-settings를 사용해 환경변수 + .env 파일을 타입 안전하게 로드.
 """
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
 
     # Neo4j
-    neo4j_uri: str = "neo4j://localhost:7690"
+    neo4j_uri: str = "bolt://localhost:17687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "neo4j_password_change_me"
     neo4j_database: str = "neo4j"

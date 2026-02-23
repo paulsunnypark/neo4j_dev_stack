@@ -1,4 +1,4 @@
-# 10. 세션 작업 이력
+﻿# 10. 세션 작업 이력
 
 작업 세션별 변경 내용, 해결한 이슈, 다음 작업을 기록합니다.
 
@@ -141,7 +141,7 @@
 ### 실행 중인 서비스
 | 서비스 | 상태 | 포트 |
 |--------|------|------|
-| neo4j_dev_neo4j | healthy | 7477, 7690, 2007 |
+| neo4j_dev_neo4j | healthy | 7477, 17687, 2007 |
 | neo4j_dev_postgres | healthy | 5435 |
 | neo4j_dev_neodash | starting/healthy | 5008 |
 | neo4j_dev_prometheus | running | 9093 |
@@ -181,3 +181,30 @@
 | 낮음 | WebSocket 실시간 스트림 | `/ws/events` |
 | 낮음 | 이벤트 리플레이 API | event_log 기반 특정 시점 재투영 |
 | 낮음 | OpenAPI 스키마 고도화 | 예시 값, 더 자세한 설명 |
+
+---
+
+## Session Update (2026-02-23, project_id 필수화)
+
+### 반영 요약
+- API/모델/워커/저장소 전반에 `project_id` 필수화 적용
+- Neo4j 식별키를 `id` 단일키에서 `(projectId, id)` 복합키로 전환
+- 다중 프로젝트 운영 문서 신규 추가 및 기존 문서 최신화
+- NeoDash 접속/운영 가이드를 현재 설정으로 정리
+
+### 핵심 변경 파일
+- `backend/app/models/events.py`
+- `backend/app/main.py`
+- `backend/app/repositories/graph_repository.py`
+- `backend/app/services/projection_worker.py`
+- `backend/app/services/simulation_service.py`
+- `backend/app/migrations/neo4j_004_project_tenancy.cypher` (신규)
+- `docs/11_multi_project_playbook.md` (신규)
+
+### 데이터/마이그레이션
+- `neo4j_004_project_tenancy.cypher` 적용 완료
+- 기존 seed는 제약 충돌 방지를 위해 `id` 기반 `MERGE` + `projectId` 보정 방식으로 수정
+
+### 검증
+- pytest: `28 passed`
+- 실행 확인: health 응답 정상

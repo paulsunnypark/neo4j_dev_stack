@@ -1,9 +1,8 @@
-import asyncio
+﻿import asyncio
 import json
 import logging
 
 from app.core.postgres import PostgresManager
-from app.repositories.graph_repository import GraphRepository
 from app.models.events import (
     AttributeChangedPayload,
     EntityCreatedPayload,
@@ -12,6 +11,7 @@ from app.models.events import (
     RelationshipRemovedPayload,
     StatusChangedPayload,
 )
+from app.repositories.graph_repository import GraphRepository
 
 POLL_INTERVAL_SEC = 1.0
 BATCH_SIZE = 50
@@ -46,7 +46,7 @@ class ProjectionWorker:
                     LIMIT $1
                     FOR UPDATE SKIP LOCKED
                     """,
-                    BATCH_SIZE
+                    BATCH_SIZE,
                 )
 
                 if not rows:
@@ -55,10 +55,9 @@ class ProjectionWorker:
                 outbox_ids = [r["outbox_id"] for r in rows]
                 await conn.execute(
                     "UPDATE outbox SET status='PROCESSING', updated_at=now() WHERE id = ANY($1::bigint[])",
-                    outbox_ids
+                    outbox_ids,
                 )
 
-        # 트랜잭션 밖에서 Neo4j 작업(외부 의존성)
         ok_ids = []
         fail_map: dict[int, str] = {}
 
@@ -73,6 +72,7 @@ class ProjectionWorker:
                 ok_ids.append(outbox_id)
                 try:
                     from app.core.metrics import OUTBOX_PROCESSED
+
                     OUTBOX_PROCESSED.labels(event_type=event_type).inc()
                 except Exception:
                     pass
@@ -81,17 +81,17 @@ class ProjectionWorker:
                 fail_map[outbox_id] = str(e)
                 try:
                     from app.core.metrics import OUTBOX_FAILED
+
                     OUTBOX_FAILED.labels(event_type=event_type).inc()
                 except Exception:
                     pass
 
-        # 결과 반영
         async with pool.acquire() as conn:
             async with conn.transaction():
                 if ok_ids:
                     await conn.execute(
                         "UPDATE outbox SET status='DONE', updated_at=now() WHERE id = ANY($1::bigint[])",
-                        ok_ids
+                        ok_ids,
                     )
                 for oid, err in fail_map.items():
                     await conn.execute(
@@ -100,7 +100,8 @@ class ProjectionWorker:
                         SET status='FAILED', retry_count=retry_count+1, last_error=$2, updated_at=now()
                         WHERE id=$1
                         """,
-                        oid, err
+                        oid,
+                        err,
                     )
 
         return len(rows)
@@ -108,34 +109,38 @@ class ProjectionWorker:
     async def _apply_event(self, event_type: str, payload: dict):
         if event_type == "EntityCreated":
             p = EntityCreatedPayload(**payload)
-            await self.graph_repo.upsert_entity(p.entity_id, p.entity_type, p.name, p.attributes)
+            await self.graph_repo.upsert_entity(
+                p.project_id, p.entity_id, p.entity_type, p.name, p.attributes
+            )
 
         elif event_type == "EntityDeleted":
             p = EntityDeletedPayload(**payload)
-            await self.graph_repo.delete_entity(p.entity_id)
+            await self.graph_repo.delete_entity(p.project_id, p.entity_id)
 
         elif event_type == "AttributeChanged":
             p = AttributeChangedPayload(**payload)
-            await self.graph_repo.set_attribute(p.entity_id, p.attribute_key, p.new_value)
+            await self.graph_repo.set_attribute(p.project_id, p.entity_id, p.attribute_key, p.new_value)
 
         elif event_type == "RelationshipEstablished":
             p = RelationshipEstablishedPayload(**payload)
-            await self.graph_repo.upsert_relationship(p.from_id, p.to_id, p.rel_type, p.properties)
+            await self.graph_repo.upsert_relationship(
+                p.project_id, p.from_id, p.to_id, p.rel_type, p.properties
+            )
 
         elif event_type == "RelationshipRemoved":
             p = RelationshipRemovedPayload(**payload)
-            await self.graph_repo.remove_relationship(p.from_id, p.to_id, p.rel_type)
+            await self.graph_repo.remove_relationship(p.project_id, p.from_id, p.to_id, p.rel_type)
 
         elif event_type == "StatusChanged":
             p = StatusChangedPayload(**payload)
-            await self.graph_repo.set_status(p.entity_id, p.new_status)
+            await self.graph_repo.set_status(p.project_id, p.entity_id, p.new_status)
 
-        # 하위 호환
         elif event_type == "DeviceStatusChanged":
+            project_id = payload["project_id"]
             device_id = payload["device_id"]
             status = payload["status"]
             name = payload.get("name", device_id)
-            await self.graph_repo.upsert_device(device_id, name, status)
+            await self.graph_repo.upsert_device(project_id, device_id, name, status)
 
         else:
             logger.warning("Unsupported event type ignored: %s", event_type)
