@@ -99,6 +99,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 - Prometheus: http://localhost:9093
 
 중요:
+
 - 브라우저 사용자는 NeoDash(`http://localhost:5008`)로 접속합니다.
 - Bolt URL을 브라우저에 직접 입력해 연결하는 절차는 문서 기준에서 사용하지 않습니다.
 
@@ -127,7 +128,18 @@ Invoke-RestMethod -Uri "http://localhost:8000/outbox/stats?project_id=project-a"
 pytest tests/ -v
 ```
 
-## 12) 종료
+## 12) 외부 프로젝트 연동 라이브러리 가이드 (Integration Guide)
+
+본 `neo4j_dev_stack` 백엔드 환경은 다른 로컬 프로젝트(예: `project-a`)에서 코어 모듈(예: DB 연결)로 직접 임포트하여 재사용할 수 있습니다.
+
+### 연동 방법
+
+1. 대상 프로젝트의 Python 환경에 `.pth` 파일을 생성하여 본 스택의 `backend` 절대 경로를 추가합니다.
+   - 예시 (Windows PowerShell): `echo "E:\neo4j_dev_stack\backend" > .venv\Lib\site-packages\neo4j_dev.pth`
+2. **주의**: 대상 프로젝트의 주요 소스코드 디렉토리 이름은 `app`과 겹치지 않게 고유한 이름(예: `tms_app`)으로 설정해야 모듈 이름 공간 충돌(Shadowing)을 피할 수 있습니다.
+3. 대상 프로젝트 코드 내에서 `from app.core.neo4j import Neo4jManager` 와 같이 본 스택의 모듈을 호출하여 DB 커넥션 풀 등의 인프라를 그대로 활용할 수 있습니다.
+
+## 13) 종료
 
 ```powershell
 cd ..\docker
