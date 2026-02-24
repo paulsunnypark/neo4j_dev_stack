@@ -74,12 +74,15 @@ services:
       - "5008:5005"
     environment:
       - ssoEnabled=false
-      - standalone=true
-      - standaloneProtocol=bolt
-      - standaloneHost=localhost
-      - standalonePort=17687
-      - standaloneDatabase=neo4j
-      - standaloneUsername=neo4j
+      # - standalone=true
+      # - standaloneDashboardName="TMS Dashboard"
+      # - standaloneProtocol=bolt
+      # - standaloneHost=localhost
+      # - standalonePort=17687
+      # - standaloneDatabase=neo4j
+      # - standaloneUsername=neo4j
+    # volumes:
+    #   - ./neodash/dashboard.json:/usr/share/nginx/html/dashboard.json:ro
 
   prometheus:
     image: prom/prometheus:latest

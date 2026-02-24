@@ -152,3 +152,6 @@ docker compose down
 - DB 연결 실패: `docker compose ps`에서 `neo4j`, `postgres` 상태 확인
 - API 401/403: `X-API-Key` 헤더 값 확인
 - NeoDash 경고 관련: 평문 비밀번호는 설정에 저장하지 않음(현재 구성 반영 완료)
+- NeoDash 편집 UI(Add Report, Save 등)가 보이지 않거나 오류가 날 때:
+  - 브라우저 로컬 스토리지에 이전 뷰어 전용 상태(`standalone=true`)가 캐시되어 발생할 수 있습니다.
+  - 브라우저 창을 시크릿 모드로 접속하거나, 캐시 및 쿠키를 비우면 정상적으로 "Save" 버튼과 사이드바 편집 모드가 노출됩니다.

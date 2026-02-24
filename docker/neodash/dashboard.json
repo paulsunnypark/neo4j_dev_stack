@@ -1,0 +1,41 @@
+{
+  "title": "Tiny Matter Network Simulator (TMS)",
+  "version": "2.1",
+  "settings": {
+    "pagenumber": 0,
+    "editable": true,
+    "fullscreenEnabled": false,
+    "parameters": {}
+  },
+  "pages": [
+    {
+      "title": "Main Page",
+      "reports": [
+        {
+          "title": "Network Topology",
+          "query": "MATCH p=(d:Device {project_id: 'project-a'})-[r]-(t)\nRETURN p",
+          "width": 12,
+          "height": 4,
+          "x": 0,
+          "y": 0,
+          "type": "graph",
+          "selection": {},
+          "settings": {}
+        },
+        {
+          "title": "Device Details (Real-time)",
+          "query": "MATCH (d:Device {project_id: 'project-a'})\nRETURN d.name AS DeviceName, d.device_type AS Type, d.status AS Status, d.property_temperature AS Temp, d.property_brightness AS Brightness\nORDER BY d.device_type, d.name",
+          "width": 12,
+          "height": 4,
+          "x": 0,
+          "y": 4,
+          "type": "table",
+          "selection": {},
+          "settings": {}
+        }
+      ]
+    }
+  ],
+  "parameters": {},
+  "extensions": {}
+}
