@@ -1,6 +1,6 @@
 ﻿# Neo4j Dev Stack - 문서 인덱스
 
-> 마지막 업데이트: 2026-02-23
+> 마지막 업데이트: 2026-02-27
 
 ## 문서 목록
 
@@ -17,6 +17,7 @@
 | [09_dev_runbook.md](09_dev_runbook.md) | 운영/개발 런북 |
 | [10_session_log.md](10_session_log.md) | 작업 이력(참고용) |
 | [11_multi_project_playbook.md](11_multi_project_playbook.md) | 고난도/다중 프로젝트 개발 절차 |
+| [12_frontend_upgrade_2026-02-27.md](12_frontend_upgrade_2026-02-27.md) | neo_stacker 프론트엔드 업그레이드 결과 보고 |
 
 ## 빠른 시작 (TL;DR)
 
