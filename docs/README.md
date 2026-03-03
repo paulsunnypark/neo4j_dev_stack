@@ -20,6 +20,7 @@
 | [12_frontend_upgrade_2026-02-27.md](12_frontend_upgrade_2026-02-27.md) | neo_stacker 프론트엔드 업그레이드 결과 보고 |
 | [13_stack_upgrade_next_steps_2026-02-27.md](13_stack_upgrade_next_steps_2026-02-27.md) | backend/docker/docs 업그레이드 연계 및 다음 단계 |
 | [14_cross_repo_local_validation_2026-03-03.md](14_cross_repo_local_validation_2026-03-03.md) | 최신 코드베이스 동기화/도커 구동/통합 검증 결과 |
+| [15_aura_lightweight_profile_validation_2026-03-03.md](15_aura_lightweight_profile_validation_2026-03-03.md) | Aura/경량화 프로필 분리 운영 검증 결과 |
 
 ## 빠른 시작 (TL;DR)
 
@@ -31,7 +32,11 @@ python -m venv .venv
 
 # 2) Docker 기동
 cd ..\docker
-docker compose up -d
+
+# AuraDB mode (default)
+Copy-Item .env.aura.example .env.aura
+# .env.aura 값 수정 후
+docker compose --env-file .env.aura up -d postgres backend frontend
 
 # 3) 마이그레이션
 cd ..\backend
@@ -45,14 +50,14 @@ cd ..\backend
 
 | 서비스 | URL | 로그인/인증 |
 |--------|-----|-------------|
-| NeoDash (권장) | http://localhost:5008 | `neo4j` / `neo4j_password_change_me` |
 | FastAPI Docs | http://localhost:8000/docs | `X-API-Key: dev-secret-key-change-me` |
 | FastAPI Health | http://localhost:8000/health | 인증 불필요 |
-| Neo4j Browser (옵션) | http://localhost:7477 | `neo4j` / `neo4j_password_change_me` |
-| Grafana | http://localhost:3003 | `admin` / `admin_change_me` |
-| Prometheus | http://localhost:9093 | 없음 |
+| Frontend | http://localhost:5173 | 없음 |
 | Postgres | `localhost:5435` | `ha` / `ha_password_change_me` (DB: `ha_core`) |
 
 중요:
-- 브라우저 기반 사용은 NeoDash(`http://localhost:5008`)를 기준으로 안내합니다.
+- AuraDB 사용 시 `.env.aura`를 사용해 명시적으로 연결값을 관리합니다.
+- 기존 로컬 설치형 Neo4j 연동은 `.env.local` 프로필로 별도 관리할 수 있습니다.
+- Aura의 데이터베이스명은 `neo4j`가 아닐 수 있으며, 인스턴스 ID와 동일한 값(예: `7445e7b0`)일 수 있습니다.
+- 로컬 설치형 Neo4j는 Docker 스택에 포함하지 않으며, 필요할 때만 별도 프로세스로 준비합니다.
 - API 기반 개발에서는 모든 요청에 `project_id`를 반드시 포함해야 합니다.

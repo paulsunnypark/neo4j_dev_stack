@@ -8,7 +8,11 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
 cd ..\docker
-docker compose up -d
+
+# AuraDB mode (기본 운영 모드)
+Copy-Item .env.aura.example .env.aura
+# .env.aura 파일 값 수정 후
+docker compose --env-file .env.aura up -d postgres backend frontend
 
 cd ..\backend
 .\.venv\Scripts\python.exe scripts\apply_neo4j_migrations.py
@@ -17,9 +21,8 @@ cd ..\backend
 
 ## 2) Access
 
-- NeoDash: `http://localhost:5008`
-  - `neo4j / neo4j_password_change_me`
 - API Docs: `http://localhost:8000/docs`
+- Frontend: `http://localhost:5173`
 
 ## 3) Required Tenant Rule
 
@@ -34,11 +37,28 @@ Examples:
 
 ```powershell
 cd D:\neo4j_dev_stack\docker
-docker compose up -d
+# AuraDB mode (기본)
+docker compose --env-file .env.aura up -d postgres backend frontend
+
 docker compose ps
-docker compose logs -f neo4j neodash postgres
+docker compose logs -f backend postgres
+
 docker compose down
 ```
+
+## 4.1) Local Neo4j 설치 준비 (Docker 미포함)
+
+로컬 설치형 Neo4j는 Docker 스택에 포함하지 않고, 필요 시 별도 프로세스로만 사용합니다.
+
+```powershell
+# 예시: 로컬 Neo4j를 17687(Bolt)로 실행한 경우
+Copy-Item .env.local-install.example .env.local
+# .env.local 값 수정 후
+docker compose --env-file .env.local up -d postgres backend frontend
+```
+
+운영 기본값은 AuraDB이며, 로컬 Neo4j는 장애 대응/개발 실험용 fallback으로만 유지합니다.
+Aura에서는 데이터베이스 이름이 `neo4j`가 아니라 인스턴스명(예: `7445e7b0`)인 경우가 많으므로 콘솔 값을 그대로 사용합니다.
 
 ### Frontend Quality Gate (local)
 
