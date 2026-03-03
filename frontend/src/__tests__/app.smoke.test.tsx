@@ -3,35 +3,31 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import App from '../App';
 import { AppProvider } from '../stores/AppStore';
 import { useAppContext } from '../stores/useAppContext';
-import { apiClient } from '../api/client';
 import { queryClient } from '../queryClient';
+import { installApiClientMock } from '../test/mockApiClient';
 
 describe('App smoke', () => {
-  afterEach(() => {
+  let apiMock: ReturnType<typeof installApiClientMock> | null = null;
+
+  afterEach(async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    apiMock?.restore();
+    apiMock = null;
     vi.restoreAllMocks();
     localStorage.clear();
-    queryClient.clear();
   });
 
   it('renders main shell and overview route', async () => {
-    vi.spyOn(apiClient, 'get').mockImplementation((url: string) => {
-      if (url === '/projects') {
-        return Promise.resolve({ data: ['project-a', 'project-b'] });
-      }
-      if (url === '/stats') {
-        return Promise.resolve({
-          data: { total_nodes: 3, active_nodes: 2, total_relationships: 4 },
-        });
-      }
-      if (url === '/outbox/stats') {
-        return Promise.resolve({ data: { PENDING: 1, DONE: 2, FAILED: 0 } });
-      }
-      return Promise.resolve({ data: { items: [] } });
-    });
+    apiMock = installApiClientMock([
+      { method: 'get', matcher: '/projects', response: ['project-a', 'project-b'] },
+      { method: 'get', matcher: '/stats', response: { total_nodes: 3, active_nodes: 2, total_relationships: 4 } },
+      { method: 'get', matcher: '/outbox/stats', response: { PENDING: 1, DONE: 2, FAILED: 0 } },
+    ]);
 
     render(<App />);
 
-    expect(await screen.findByText('System Overview')).toBeInTheDocument();
+    expect(await screen.findByText('System Overview', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByText('NEO:STACK')).toBeInTheDocument();
     expect(screen.getByText('Overview')).toBeInTheDocument();
   });

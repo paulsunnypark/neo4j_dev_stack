@@ -186,6 +186,7 @@ export default function GraphCanvas() {
         <div className="glass-panel rounded-lg border border-white/10 shadow-lg p-1">
           <button 
             onClick={() => setShowFilters(!showFilters)} 
+            aria-label="Toggle filters"
             className={`p-2.5 rounded-md transition-colors ${showFilters ? 'bg-primary/20 text-primary' : 'text-textMuted hover:text-white hover:bg-white/10'}`} 
             title="Filters"
           >
@@ -205,6 +206,7 @@ export default function GraphCanvas() {
             <div>
               <label className="text-xs font-medium text-textMuted uppercase tracking-wider mb-1 block">Entity Type</label>
               <select 
+                aria-label="Filter by entity type"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-primary"
@@ -216,6 +218,7 @@ export default function GraphCanvas() {
             <div>
               <label className="text-xs font-medium text-textMuted uppercase tracking-wider mb-1 block">Status</label>
               <select 
+                aria-label="Filter by entity status"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full bg-black/30 border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-primary"

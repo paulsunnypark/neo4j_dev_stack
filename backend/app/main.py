@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.auth import verify_api_key
@@ -64,6 +65,14 @@ app = FastAPI(
         "Neo4j + Postgres event-sourcing backend. "
         "All graph writes are projected asynchronously via outbox."
     ),
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.mount("/metrics", metrics_app)
@@ -213,6 +222,24 @@ async def change_attribute(
     return EventQueued(event_id=event_id)
 
 
+@app.get(
+    "/relationships",
+    response_model=PagedResponse,
+    tags=["relationships"],
+)
+async def list_relationships(
+    project_id: str = Query(..., min_length=1, description="Tenant/project scope ID"),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(50, ge=1, le=500, description="Page size"),
+    _: str = Depends(verify_api_key),
+):
+    repo = GraphRepository(Neo4jManager.get_driver())
+    items = await repo.list_relationships(project_id=project_id, page=page, size=size)
+    total = await repo.count_relationships(project_id=project_id)
+    pages = (total + size - 1) // size if total > 0 else 1
+    return PagedResponse(items=items, total=total, page=page, size=size, pages=pages)
+
+
 @app.post(
     "/relationships",
     status_code=status.HTTP_202_ACCEPTED,
@@ -249,6 +276,49 @@ async def remove_relationship(
     return EventQueued(event_id=event_id)
 
 
+@app.get("/projects", tags=["projects"])
+async def list_projects(
+    _: str = Depends(verify_api_key),
+):
+    try:
+        repo = GraphRepository(Neo4jManager.get_driver())
+        async with repo.driver.session() as session:
+            res = await session.run("MATCH (n:Entity) WHERE n.projectId IS NOT NULL RETURN DISTINCT n.projectId AS project_id")
+            records = await res.data()
+            projects = [r["project_id"] for r in records]
+        return projects
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.get("/stats", tags=["ops"])
+async def graph_stats(
+    project_id: str = Query(..., min_length=1, description="Tenant/project scope ID"),
+    _: str = Depends(verify_api_key),
+):
+    try:
+        repo = GraphRepository(Neo4jManager.get_driver())
+        async with repo.driver.session() as session:
+            # Total Nodes
+            res_nodes = await session.run("MATCH (n:Entity {projectId: $project_id}) RETURN count(n) AS cnt", project_id=project_id)
+            nodes_cnt = (await res_nodes.single())["cnt"]
+            
+            # Active Nodes
+            res_active = await session.run("MATCH (n:Entity {projectId: $project_id, status: 'ON'}) RETURN count(n) AS cnt", project_id=project_id)
+            active_cnt = (await res_active.single())["cnt"]
+            
+            # Total Relationships
+            res_rels = await session.run("MATCH (a:Entity {projectId: $project_id})-[r]->(b:Entity {projectId: $project_id}) RETURN count(r) AS cnt", project_id=project_id)
+            rels_cnt = (await res_rels.single())["cnt"]
+            
+        return {
+            "total_nodes": nodes_cnt,
+            "active_nodes": active_cnt,
+            "total_relationships": rels_cnt
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
 @app.get("/outbox/stats", tags=["ops"])
 async def outbox_stats(
     project_id: str = Query(..., min_length=1, description="Tenant/project scope ID"),
@@ -262,13 +332,58 @@ async def outbox_stats(
                 SELECT o.status, count(*) AS cnt
                 FROM outbox o
                 JOIN event_log e ON e.id = o.event_id
-                WHERE e.payload->>'project_id' = $1
+                WHERE (e.payload->>'project_id' = $1 OR e.payload->>'projectId' = $1)
                 GROUP BY o.status
                 ORDER BY o.status
                 """,
                 project_id,
             )
         return {r["status"]: r["cnt"] for r in rows}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.get("/outbox", tags=["ops"])
+async def list_outbox(
+    project_id: str = Query(..., min_length=1, description="Tenant/project scope ID"),
+    status: Optional[str] = Query(None, description="Filter by status (PENDING, COMPLETED, FAILED)"),
+    limit: int = Query(50, ge=1, le=200),
+    _: str = Depends(verify_api_key),
+):
+    try:
+        pool = PostgresManager.pool()
+        base_query = """
+            SELECT o.id, o.event_id, o.status, o.created_at, o.processed_at, o.error_message,
+                   e.event_type, e.payload, e.actor
+            FROM outbox o
+            JOIN event_log e ON e.id = o.event_id
+            WHERE (e.payload->>'project_id' = $1 OR e.payload->>'projectId' = $1)
+        """
+        args = [project_id]
+        if status:
+            base_query += " AND o.status = $2"
+            args.append(status)
+        
+        base_query += f" ORDER BY o.created_at DESC LIMIT ${len(args) + 1}"
+        args.append(limit)
+
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(base_query, *args)
+            
+            result = []
+            for r in rows:
+                result.append({
+                    "id": r["id"],
+                    "event_id": r["event_id"],
+                    "status": r["status"],
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                    "processed_at": r["processed_at"].isoformat() if r["processed_at"] else None,
+                    "error_message": r["error_message"],
+                    "event_type": r["event_type"],
+                    "actor": r["actor"],
+                    "payload": r["payload"]
+                })
+            return {"items": result}
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
 

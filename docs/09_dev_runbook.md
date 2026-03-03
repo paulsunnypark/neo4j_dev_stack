@@ -40,6 +40,21 @@ docker compose logs -f neo4j neodash postgres
 docker compose down
 ```
 
+### Frontend Quality Gate (local)
+
+```powershell
+cd D:\neo4j_dev_stack\frontend
+npm run sync:api-types
+npm run lint
+npm run build
+npm run test
+npm run test:e2e
+```
+
+Notes:
+- `sync:api-types` regenerates `src/api/schema.ts` from backend OpenAPI.
+- If Playwright browser is missing, run `npx playwright install chromium` once.
+
 ## 5) API Smoke Flow per Project
 
 ```powershell
@@ -82,3 +97,8 @@ Invoke-RestMethod "$base/outbox/stats?project_id=project-a" -Headers $headers
 $pid = (Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue).OwningProcess
 if ($pid) { Stop-Process -Id $pid -Force }
 ```
+
+### Frontend CORS blocked from browser
+- Cause: backend `CORS_ORIGINS` does not include your frontend host.
+- Fix (docker): set backend env `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
+- Fix (local backend): set `CORS_ORIGINS` in `backend/.env` and restart API.

@@ -1,6 +1,6 @@
 ﻿# Neo4j Dev Stack - 문서 인덱스
 
-> 마지막 업데이트: 2026-02-27
+> 마지막 업데이트: 2026-03-03
 
 ## 문서 목록
 
@@ -18,6 +18,8 @@
 | [10_session_log.md](10_session_log.md) | 작업 이력(참고용) |
 | [11_multi_project_playbook.md](11_multi_project_playbook.md) | 고난도/다중 프로젝트 개발 절차 |
 | [12_frontend_upgrade_2026-02-27.md](12_frontend_upgrade_2026-02-27.md) | neo_stacker 프론트엔드 업그레이드 결과 보고 |
+| [13_stack_upgrade_next_steps_2026-02-27.md](13_stack_upgrade_next_steps_2026-02-27.md) | backend/docker/docs 업그레이드 연계 및 다음 단계 |
+| [14_cross_repo_local_validation_2026-03-03.md](14_cross_repo_local_validation_2026-03-03.md) | 최신 코드베이스 동기화/도커 구동/통합 검증 결과 |
 
 ## 빠른 시작 (TL;DR)
 

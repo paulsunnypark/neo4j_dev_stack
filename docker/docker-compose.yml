@@ -1,4 +1,4 @@
-name: neo4j_dev
+name: neo_stacker
 
 services:
   neo4j:
@@ -64,25 +64,54 @@ services:
       timeout: 5s
       retries: 30
 
-  neodash:
-    image: neo4jlabs/neodash:latest
-    container_name: neo4j_dev_neodash
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: neo_stacker_api
+    ports:
+      - "8000:8000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=neo4j_password_change_me
+      - NEO4J_DATABASE=neo4j
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DB=ha_core
+      - PG_USER=ha
+      - PG_PASSWORD=ha_password_change_me
+      - API_KEY=dev-secret-key-change-me
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - LOG_LEVEL=INFO
     depends_on:
+      postgres:
+        condition: service_healthy
       neo4j:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: neo_stacker_ui
     ports:
-      - "5008:5005"
+      - "5173:5173"
     environment:
-      - ssoEnabled=false
-      # - standalone=true
-      # - standaloneDashboardName="TMS Dashboard"
-      # - standaloneProtocol=bolt
-      # - standaloneHost=localhost
-      # - standalonePort=17687
-      # - standaloneDatabase=neo4j
-      # - standaloneUsername=neo4j
-    # volumes:
-    #   - ./neodash/dashboard.json:/usr/share/nginx/html/dashboard.json:ro
+      - VITE_API_URL=http://localhost:8000
+      - VITE_API_KEY=dev-secret-key-change-me
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
+
 
   prometheus:
     image: prom/prometheus:latest

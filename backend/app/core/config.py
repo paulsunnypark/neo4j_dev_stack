@@ -1,7 +1,9 @@
-﻿"""
+"""
 애플리케이션 설정.
 pydantic-settings를 사용해 환경변수 + .env 파일을 타입 안전하게 로드.
 """
+from functools import cached_property
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,9 +30,15 @@ class Settings(BaseSettings):
 
     # API
     api_key: str = ""            # 비어있으면 개발 모드 (인증 생략)
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     log_level: str = "INFO"
     app_title: str = "Neo4j+Postgres Dev Stack"
     app_version: str = "1.0.0"
+
+    @cached_property
+    def cors_origins_list(self) -> list[str]:
+        origins = [item.strip() for item in self.cors_origins.split(",") if item.strip()]
+        return origins or ["http://localhost:5173"]
 
 
 settings = Settings()
