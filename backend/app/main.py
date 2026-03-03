@@ -346,14 +346,20 @@ async def outbox_stats(
 @app.get("/outbox", tags=["ops"])
 async def list_outbox(
     project_id: str = Query(..., min_length=1, description="Tenant/project scope ID"),
-    status: Optional[str] = Query(None, description="Filter by status (PENDING, COMPLETED, FAILED)"),
+    status: Optional[str] = Query(None, description="Filter by status (PENDING, PROCESSING, DONE, FAILED)"),
     limit: int = Query(50, ge=1, le=200),
     _: str = Depends(verify_api_key),
 ):
     try:
         pool = PostgresManager.pool()
         base_query = """
-            SELECT o.id, o.event_id, o.status, o.created_at, o.processed_at, o.error_message,
+            SELECT
+                   o.id,
+                   o.event_id,
+                   o.status,
+                   o.created_at,
+                   CASE WHEN o.status IN ('DONE', 'FAILED') THEN o.updated_at ELSE NULL END AS processed_at,
+                   o.last_error AS error_message,
                    e.event_type, e.payload, e.actor
             FROM outbox o
             JOIN event_log e ON e.id = o.event_id
