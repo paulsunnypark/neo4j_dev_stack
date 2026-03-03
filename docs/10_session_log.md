@@ -208,3 +208,34 @@
 ### 검증
 - pytest: `28 passed`
 - 실행 확인: health 응답 정상
+
+---
+
+## Session Update (2026-03-03, Aura/경량화 전환 + 명칭 정리)
+
+### 배경
+- 원 저장소는 `neo4j_dev_stack`.
+- 이 저장소 안의 사용자 UI/운영 앱 이름은 `neo_stacker`.
+- 과거 `NeoDash` 중심 운영에서, 최근에는 `neo_stacker` 중심 운영으로 전환.
+
+### 이번 작업의 실제 범위
+- 주 작업 대상은 **`neo4j_dev_stack` 저장소 전체**이며,
+  - 그중 런타임/운영 변경은 `docker` + `backend`,
+  - 사용자 화면/검증 관점은 `neo_stacker`(frontend/backend API) 기준으로 수행.
+
+### Aura/경량화 반영 내용
+- Docker 기본 구성을 `postgres/backend/frontend` 경량 3서비스로 축소.
+- 로컬 Neo4j 컨테이너는 제거하고, 필요 시 로컬 설치형 Neo4j를 env-file 프로필로만 연동.
+- 프로필 파일 분리:
+  - `docker/.env.aura.example`
+  - `docker/.env.local-install.example`
+
+### 운영 명칭 가이드(혼선 방지)
+- 저장소/프로젝트명: `neo4j_dev_stack`
+- 실행 앱/컴포즈 네임: `neo_stacker`
+- 문서에서 `neo4j_dev_stacker` 표기는 오타로 보고 사용하지 않음.
+
+### 검증 요약
+- Aura 연결 상태: `/health`에서 `neo4j=true`, `postgres=true` 확인.
+- 사용자 API 경로 검증: `/projects`, `/entities`, `/outbox`, `/outbox/stats` 확인.
+- Outbox 503 이슈(`processed_at` 컬럼 불일치) 수정 완료.

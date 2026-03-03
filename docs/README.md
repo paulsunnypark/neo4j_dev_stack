@@ -21,6 +21,7 @@
 | [13_stack_upgrade_next_steps_2026-02-27.md](13_stack_upgrade_next_steps_2026-02-27.md) | backend/docker/docs 업그레이드 연계 및 다음 단계 |
 | [14_cross_repo_local_validation_2026-03-03.md](14_cross_repo_local_validation_2026-03-03.md) | 최신 코드베이스 동기화/도커 구동/통합 검증 결과 |
 | [15_aura_lightweight_profile_validation_2026-03-03.md](15_aura_lightweight_profile_validation_2026-03-03.md) | Aura/경량화 프로필 분리 운영 검증 결과 |
+| [16_naming_and_scope_clarification_2026-03-03.md](16_naming_and_scope_clarification_2026-03-03.md) | neo4j_dev_stack vs neo_stacker 명칭/범위 정리 |
 
 ## 빠른 시작 (TL;DR)
 
