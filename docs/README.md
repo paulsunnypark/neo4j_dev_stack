@@ -22,6 +22,7 @@
 | [14_cross_repo_local_validation_2026-03-03.md](14_cross_repo_local_validation_2026-03-03.md) | 최신 코드베이스 동기화/도커 구동/통합 검증 결과 |
 | [15_aura_lightweight_profile_validation_2026-03-03.md](15_aura_lightweight_profile_validation_2026-03-03.md) | Aura/경량화 프로필 분리 운영 검증 결과 |
 | [16_naming_and_scope_clarification_2026-03-03.md](16_naming_and_scope_clarification_2026-03-03.md) | neo4j_dev_stack vs neo_stacker 명칭/범위 정리 |
+| [17_hise_integration_contract_2026-03-03.md](17_hise_integration_contract_2026-03-03.md) | hi-se 연동 API 계약 및 배치 이벤트 규격 |
 
 ## 빠른 시작 (TL;DR)
 

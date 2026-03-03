@@ -12,8 +12,9 @@ from app.core.config import settings
 from app.core.metrics import OUTBOX_PENDING, metrics_app
 from app.core.neo4j import Neo4jManager
 from app.core.postgres import PostgresManager
-from app.models.api import ErrorResponse, EventQueued, HealthResponse, PagedResponse
+from app.models.api import BatchEventQueued, ErrorResponse, EventQueued, HealthResponse, PagedResponse
 from app.models.events import (
+    BatchEventRequest,
     AttributeChangedPayload,
     EntityCreatedPayload,
     EntityDeletedPayload,
@@ -139,6 +140,31 @@ async def create_entity(
         actor="api",
     )
     return EventQueued(event_id=event_id)
+
+
+@app.post(
+    "/events/batch",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=BatchEventQueued,
+    tags=["events"],
+)
+async def append_events_batch(
+    payload: BatchEventRequest,
+    _: str = Depends(verify_api_key),
+):
+    if not payload.events:
+        return BatchEventQueued(event_ids=[], count=0)
+
+    events = [
+        {
+            "event_type": item.event_type,
+            "payload": item.payload,
+            "actor": item.actor,
+        }
+        for item in payload.events
+    ]
+    event_ids = await EventRepository().append_events(events)
+    return BatchEventQueued(event_ids=event_ids, count=len(event_ids))
 
 
 @app.get(

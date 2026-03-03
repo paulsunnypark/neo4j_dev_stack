@@ -3,7 +3,7 @@
 Pydantic 모델로 validation과 OpenAPI 문서화를 동시에 처리.
 """
 from __future__ import annotations
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -92,3 +92,23 @@ class StatusChangedPayload(BaseModel):
         "entity_id": "entity-1", "entity_type": "Device",
         "old_status": "ONLINE", "new_status": "OFFLINE"
     }}}
+
+
+EventTypeLiteral = Literal[
+    "EntityCreated",
+    "EntityDeleted",
+    "AttributeChanged",
+    "RelationshipEstablished",
+    "RelationshipRemoved",
+    "StatusChanged",
+]
+
+
+class BatchEventItem(BaseModel):
+    event_type: EventTypeLiteral
+    payload: Dict[str, Any]
+    actor: Optional[str] = "api"
+
+
+class BatchEventRequest(BaseModel):
+    events: List[BatchEventItem] = Field(default_factory=list)

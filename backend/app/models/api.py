@@ -32,3 +32,9 @@ class HealthResponse(BaseModel):
 class EventQueued(BaseModel):
     event_id: int
     note: str = "Queued for projection"
+
+
+class BatchEventQueued(BaseModel):
+    event_ids: List[int]
+    count: int
+    note: str = "Queued for projection"
