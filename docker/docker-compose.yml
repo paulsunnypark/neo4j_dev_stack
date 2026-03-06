@@ -1,11 +1,23 @@
 name: neo_stacker
 
 services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: neo_stacker_neo4j
+    profiles: ["local-neo"]
+    ports:
+      - "${NEO_STACKER_NEO4J_HTTP_PORT:-17474}:7474"
+      - "${NEO_STACKER_NEO4J_BOLT_PORT:-17687}:7687"
+    environment:
+      - NEO4J_AUTH=${NEO_STACKER_NEO4J_AUTH:-neo4j/neo4j_password_change_me}
+    volumes:
+      - neo_data:/data
+
   postgres:
     image: postgres:16
     container_name: neo4j_dev_postgres
     ports:
-      - "5435:5432"
+      - "${NEO_STACKER_PG_PORT:-15435}:5432"
     environment:
       - POSTGRES_DB=ha_core
       - POSTGRES_USER=ha
@@ -25,7 +37,7 @@ services:
       dockerfile: Dockerfile
     container_name: neo_stacker_api
     ports:
-      - "8000:8000"
+      - "${NEO_STACKER_API_PORT:-18080}:8000"
     environment:
       - NEO4J_URI=${NEO4J_URI}
       - NEO4J_USER=${NEO4J_USER}
@@ -36,8 +48,8 @@ services:
       - PG_DB=ha_core
       - PG_USER=ha
       - PG_PASSWORD=ha_password_change_me
-      - API_KEY=dev-secret-key-change-me
-      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - API_KEY=${NEO_STACKER_API_KEY:-dev-secret-key-change-me}
+      - CORS_ORIGINS=${NEO_STACKER_CORS_ORIGINS:-http://localhost:15173,http://127.0.0.1:15173,http://localhost:4173}
       - LOG_LEVEL=INFO
     depends_on:
       postgres:
@@ -54,10 +66,10 @@ services:
       dockerfile: Dockerfile
     container_name: neo_stacker_ui
     ports:
-      - "5173:5173"
+      - "${NEO_STACKER_UI_PORT:-15173}:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_API_KEY=dev-secret-key-change-me
+      - VITE_API_URL=${NEO_STACKER_API_PUBLIC_URL:-http://localhost:18080}
+      - VITE_API_KEY=${NEO_STACKER_API_KEY:-dev-secret-key-change-me}
     depends_on:
       backend:
         condition: service_healthy
@@ -66,3 +78,4 @@ services:
       - ../frontend/public:/app/public
 volumes:
   pg_data:
+  neo_data:

@@ -23,14 +23,14 @@ class Settings(BaseSettings):
 
     # Postgres
     pg_host: str = "localhost"
-    pg_port: int = 5435
+    pg_port: int = 15435
     pg_db: str = "ha_core"
     pg_user: str = "ha"
     pg_password: str = "ha_password_change_me"
 
     # API
     api_key: str = ""            # 비어있으면 개발 모드 (인증 생략)
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:15173,http://127.0.0.1:15173,http://localhost:4173"
     log_level: str = "INFO"
     app_title: str = "Neo4j+Postgres Dev Stack"
     app_version: str = "1.0.0"
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     @cached_property
     def cors_origins_list(self) -> list[str]:
         origins = [item.strip() for item in self.cors_origins.split(",") if item.strip()]
-        return origins or ["http://localhost:5173"]
+        return origins or ["http://localhost:15173"]
 
 
 settings = Settings()

@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { AxiosResponse, AxiosError } from 'axios';
 
 // Ensure this matches the backend port or the Docker network configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:18080';
 const DEFAULT_API_KEY = 'dev-secret-key-change-me';
 const SHOULD_LOG_API_ERRORS = import.meta.env.MODE !== 'test';
 

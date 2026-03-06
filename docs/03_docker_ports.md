@@ -15,9 +15,11 @@ name: neo_stacker
 
 | 서비스 | 컨테이너 | 호스트 포트 | 컨테이너 포트 | 용도 |
 | ------ | -------- | ----------- | ------------- | ---- |
-| PostgreSQL | neo4j_dev_postgres | `5435` | `5432` | 이벤트 로그/아웃박스 저장 |
-| Backend API | neo_stacker_api | `8000` | `8000` | REST API |
-| Frontend | neo_stacker_ui | `5173` | `5173` | 사용자 대시보드 |
+| PostgreSQL | neo4j_dev_postgres | `15435` (기본) | `5432` | 이벤트 로그/아웃박스 저장 |
+| Backend API | neo_stacker_api | `18080` (기본) | `8000` | REST API |
+| Frontend | neo_stacker_ui | `15173` (기본) | `5173` | 사용자 대시보드 |
+
+- 포트는 `docker/.env.example` 또는 `.env.runtime`으로 오버라이드 가능
 
 ## 프로필별 환경변수 파일
 

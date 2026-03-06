@@ -192,6 +192,37 @@ class GraphRepository:
             )
         return int(rows[0]["total"]) if rows else 0
 
+    async def list_relationships(
+        self,
+        project_id: str,
+        page: int = 1,
+        size: int = 50,
+    ) -> List[Dict[str, Any]]:
+        skip = (page - 1) * size
+        cypher = """
+        MATCH (a:Entity {projectId: $project_id})-[r]->(b:Entity {projectId: $project_id})
+        WHERE r.projectId = $project_id
+        RETURN a.id AS source_id, b.id AS target_id, type(r) AS rel_type,
+               properties(r) AS props
+        ORDER BY a.id, b.id
+        SKIP $skip LIMIT $size
+        """
+        return await self.run_read(
+            cypher,
+            {"project_id": project_id, "skip": skip, "size": size},
+        )
+
+    async def count_relationships(self, project_id: str) -> int:
+        rows = await self.run_read(
+            """
+            MATCH (a:Entity {projectId: $project_id})-[r]->(b:Entity {projectId: $project_id})
+            WHERE r.projectId = $project_id
+            RETURN count(r) AS total
+            """,
+            {"project_id": project_id},
+        )
+        return int(rows[0]["total"]) if rows else 0
+
     async def upsert_device(self, project_id: str, device_id: str, name: str, status: str) -> None:
         await self.upsert_entity(
             project_id=project_id,
